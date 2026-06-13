@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Álbum Mundial 2026 🏆</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- APP HEADER -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="logo">🏆</div>
+        <div class="header-title">
+          <h1>Mundial 2026</h1>
+          <span>USA · MEX · CAN — Álbum personal</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar" id="stats-bar">
+      <div class="progress-ring-wrap">
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3b82f6" />
+              <stop offset="100%" stop-color="#f59e0b" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="36" cy="36" r="30" />
+          <circle
+            class="ring-fill"
+            id="ring-fill"
+            cx="36"
+            cy="36"
+            r="30"
+            stroke-dasharray="188.5"
+            stroke-dashoffset="188.5"
+          />
+        </svg>
+        <div class="ring-text">
+          <span class="ring-pct" id="ring-pct">0%</span>
+          <span class="ring-label">listo</span>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">Tengo</span>
+          <span class="stat-value blue" id="stat-tengo">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Me faltan</span>
+          <span class="stat-value red" id="stat-faltan">628</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Repetidas</span>
+          <span class="stat-value gold" id="stat-repetidas">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Total álbum</span>
+          <span class="stat-value" id="stat-total">628</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-wrap">
+      <button class="tab-btn active" id="tab-todas" onclick="setTab('todas')">
+        Todas <span class="tab-badge" id="badge-todas">628</span>
+      </button>
+      <button class="tab-btn" id="tab-faltan" onclick="setTab('faltan')">
+        Me faltan <span class="tab-badge" id="badge-faltan">628</span>
+      </button>
+      <button class="tab-btn" id="tab-repetidas" onclick="setTab('repetidas')">
+        Repetidas <span class="tab-badge" id="badge-repetidas">0</span>
+      </button>
+    </div>
+
+    <!-- STICKER CONTENT -->
+    <div class="content-area" id="content-area"></div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay hidden" id="modal">
+      <div class="modal-box">
+        <h2 id="modal-title">Quitar figurita</h2>
+        <p class="modal-sub" id="modal-sub">
+          Figurita <strong id="modal-num">-</strong> ·
+          <span id="modal-desc">-</span>
+        </p>
+        <div class="modal-stepper" id="modal-stepper">
+          <button class="step-btn" id="step-minus" onclick="stepQty(-1)">
+            −
+          </button>
+          <span id="modal-qty">1</span>
+          <button class="step-btn" id="step-plus" onclick="stepQty(1)">
+            +
+          </button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" onclick="closeModal()">
+            Cancelar
+          </button>
+          <button class="btn btn-confirm" onclick="confirmRemove()">
+            Quitar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
