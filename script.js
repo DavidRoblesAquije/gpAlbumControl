@@ -1,14 +1,72 @@
+// ===== FIREBASE SETUP =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  deleteDoc,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAk4YbkVfRU7_d72yz2EA6wLKG4UYDVRB0",
+  authDomain: "mialbumgp.firebaseapp.com",
+  projectId: "mialbumgp",
+  storageBucket: "mialbumgp.firebasestorage.app",
+  messagingSenderId: "567792590628",
+  appId: "1:567792590628:web:5290a65bfd63d1b9aeddb1",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ===== DEVICE ID =====
+function getOrCreateDeviceId() {
+  let id = localStorage.getItem("album_device_id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("album_device_id", id);
+  }
+  return id;
+}
+
+const DEVICE_ID = getOrCreateDeviceId();
+
+// Show device ID on screen
+document.getElementById("device-id-display").textContent =
+  DEVICE_ID.slice(0, 8) + "…";
+
+window.copyDeviceId = function () {
+  navigator.clipboard.writeText(DEVICE_ID).then(() => showToast("ID copiado al portapapeles"));
+};
+
+// ===== FIRESTORE HELPERS =====
+function albumsCol() {
+  return collection(db, "devices", DEVICE_ID, "albums");
+}
+
+function albumDoc(albumId) {
+  return doc(db, "devices", DEVICE_ID, "albums", albumId);
+}
+
+function showSync(visible) {
+  document
+    .querySelectorAll(".sync-indicator")
+    .forEach((el) => el.classList.toggle("hidden", !visible));
+}
+
 // ===== DATA =====
 const TOTAL = 628;
 
-// Special shiny sticker IDs (numeric)
 const SHINIES = new Set([
   33, 34, 36, 37, 56, 62, 82, 92, 102, 112, 122, 148, 159, 183, 190, 200, 210,
   220, 240, 252, 264, 289, 304, 314, 324, 350, 360, 386, 408, 428, 444, 450,
   480, 486, 541, 559, 564, 591, 594, 605,
 ]);
 
-// Build section groups: numbers 1-613 in groups of 20, then specials T01-T15
+// Build section groups
 const SECTIONS = [];
 for (let start = 1; start <= 613; start += 20) {
   const end = Math.min(start + 19, 613);
@@ -16,27 +74,15 @@ for (let start = 1; start <= 613; start += 20) {
   for (let i = start; i <= end; i++) ids.push(String(i));
   SECTIONS.push({ label: `${start}–${end}`, ids, special: false });
 }
-// T-section
 const tIds = [];
 for (let i = 1; i <= 15; i++) tIds.push(`T${String(i).padStart(2, "0")}`);
 SECTIONS.push({ label: "Especiales", ids: tIds, special: true });
 
 // ===== STATE =====
-const STORAGE_KEY = "mundial2026_v2";
-let state = {}; // id -> count (0=missing,1=pasted,>=2=duplicates)
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) state = JSON.parse(raw);
-  } catch (e) {
-    state = {};
-  }
-}
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+let state = {};           // id -> count for current album
+let currentAlbumId = null;
+let currentAlbumName = "";
+let saveTimeout = null;   // debounce saves
 
 function getCount(id) {
   return state[id] || 0;
@@ -45,42 +91,206 @@ function getCount(id) {
 function setCount(id, n) {
   if (n <= 0) delete state[id];
   else state[id] = n;
-  saveState();
+  debouncedSave();
 }
 
-// ===== COMPUTED STATS =====
-function getStats() {
-  let tengo = 0,
-    repetidas = 0;
-  const allIds = getAllIds();
-  for (const id of allIds) {
-    const c = getCount(id);
-    if (c >= 1) tengo++;
-    if (c >= 2) repetidas += c - 1;
+// Debounce Firestore writes (500ms) to avoid hammering on rapid clicks
+function debouncedSave() {
+  clearTimeout(saveTimeout);
+  showSync(true);
+  saveTimeout = setTimeout(async () => {
+    await saveCurrentAlbum();
+    showSync(false);
+  }, 500);
+}
+
+async function saveCurrentAlbum() {
+  if (!currentAlbumId) return;
+  await setDoc(albumDoc(currentAlbumId), {
+    name: currentAlbumName,
+    stickers: state,
+    updatedAt: Date.now(),
+  });
+}
+
+async function loadAlbum(albumId, albumName) {
+  showSync(true);
+  const snap = await getDoc(albumDoc(albumId));
+  if (snap.exists()) {
+    state = snap.data().stickers || {};
+  } else {
+    state = {};
   }
-  const faltan = TOTAL - tengo;
-  const pct = Math.round((tengo / TOTAL) * 100);
-  return { tengo, faltan, repetidas, pct };
+  currentAlbumId = albumId;
+  currentAlbumName = albumName;
+  showSync(false);
 }
 
-function getAllIds() {
-  const ids = [];
-  for (let i = 1; i <= 613; i++) ids.push(String(i));
-  for (let i = 1; i <= 15; i++) ids.push(`T${String(i).padStart(2, "0")}`);
-  return ids;
+// ===== ALBUM SCREEN =====
+// ===== LEGACY IMPORT =====
+const LEGACY_KEY = "mundial2026_v2";
+
+window.importLegacyData = async function () {
+  const raw = localStorage.getItem(LEGACY_KEY);
+  if (!raw) { showToast("No hay datos guardados para importar"); return; }
+
+  let stickers;
+  try { stickers = JSON.parse(raw); } catch { showToast("Error al leer los datos"); return; }
+
+  const name = prompt("¿Qué nombre le pones a este álbum?", "GP 1");
+  if (!name || !name.trim()) return;
+
+  const albumId = "album_" + Date.now();
+  showSync(true);
+  await setDoc(albumDoc(albumId), {
+    name: name.trim(),
+    stickers,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+  showSync(false);
+
+  // Remove legacy key so the banner doesn't appear again
+  localStorage.removeItem(LEGACY_KEY);
+  showToast(`✅ Álbum "${name.trim()}" importado con éxito`);
+  renderAlbumScreen();
+};
+
+async function renderAlbumScreen() {
+  document.getElementById("album-screen").classList.remove("hidden");
+  document.getElementById("album-view").classList.add("hidden");
+  document.title = "Mis Álbumes 🏆";
+
+  const list = document.getElementById("albums-list");
+  list.innerHTML = `<div class="albums-loading">Cargando…</div>`;
+
+  const snap = await getDocs(albumsCol());
+  list.innerHTML = "";
+
+  // Show import banner if old localStorage data exists
+  const legacyRaw = localStorage.getItem(LEGACY_KEY);
+  if (legacyRaw) {
+    const banner = document.createElement("div");
+    banner.className = "import-banner";
+    banner.innerHTML = `
+      <span class="import-banner-icon">💾</span>
+      <div class="import-banner-text">
+        <strong>Tienes datos guardados localmente</strong>
+        <span>Impórtalos como un álbum en la nube</span>
+      </div>
+      <button class="import-banner-btn" onclick="importLegacyData()">Importar</button>
+    `;
+    list.appendChild(banner);
+  }
+
+  if (snap.empty && !legacyRaw) {
+    const empty = document.createElement("div");
+    empty.className = "albums-empty";
+    empty.textContent = "No tienes álbumes aún. ¡Crea el primero!";
+    list.appendChild(empty);
+    return;
+  }
+
+  const albums = [];
+  snap.forEach((d) => albums.push({ id: d.id, ...d.data() }));
+  albums.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+  for (const album of albums) {
+    const stickers = album.stickers || {};
+    const tengo = Object.keys(stickers).filter((k) => stickers[k] >= 1).length;
+    const pct = Math.round((tengo / TOTAL) * 100);
+
+    const card = document.createElement("div");
+    card.className = "album-card";
+    card.innerHTML = `
+      <div class="album-card-info" onclick="selectAlbum('${album.id}', \`${album.name.replace(/`/g, "'")}\`)">
+        <div class="album-card-icon">🏆</div>
+        <div class="album-card-text">
+          <div class="album-card-name">${album.name}</div>
+          <div class="album-card-sub">${tengo} / ${TOTAL} figuritas · ${pct}%</div>
+        </div>
+        <div class="album-card-pct">${pct}%</div>
+      </div>
+      <button class="album-delete-btn" title="Eliminar álbum" onclick="deleteAlbum('${album.id}', \`${album.name.replace(/`/g, "'")}\`)">🗑</button>
+    `;
+    list.appendChild(card);
+  }
 }
+
+window.selectAlbum = async function (albumId, albumName) {
+  await loadAlbum(albumId, albumName);
+  document.getElementById("album-screen").classList.add("hidden");
+  document.getElementById("album-view").classList.remove("hidden");
+  document.getElementById("album-view-title").textContent = albumName;
+  document.title = `${albumName} 🏆`;
+  renderGrid();
+  updateStats();
+};
+
+window.goBackToAlbums = function () {
+  currentAlbumId = null;
+  state = {};
+  renderAlbumScreen();
+};
+
+window.deleteAlbum = async function (albumId, albumName) {
+  if (!confirm(`¿Eliminar el álbum "${albumName}"? Se perderá todo el progreso.`)) return;
+  showSync(true);
+  await deleteDoc(albumDoc(albumId));
+  showSync(false);
+  showToast(`Álbum "${albumName}" eliminado`);
+  renderAlbumScreen();
+};
+
+// ===== NEW ALBUM MODAL =====
+window.openNewAlbumModal = function () {
+  const input = document.getElementById("new-album-name");
+  input.value = "";
+  document.getElementById("modal-new-album").classList.remove("hidden");
+  setTimeout(() => input.focus(), 100);
+};
+
+window.closeNewAlbumModal = function () {
+  document.getElementById("modal-new-album").classList.add("hidden");
+};
+
+window.confirmNewAlbum = async function () {
+  const name = document.getElementById("new-album-name").value.trim();
+  if (!name) {
+    showToast("Escribe un nombre para el álbum");
+    return;
+  }
+  closeNewAlbumModal();
+
+  const albumId = "album_" + Date.now();
+  showSync(true);
+  await setDoc(albumDoc(albumId), {
+    name,
+    stickers: {},
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+  showSync(false);
+  showToast(`Álbum "${name}" creado`);
+  renderAlbumScreen();
+};
+
+// Close new album modal on overlay click
+document.getElementById("modal-new-album").addEventListener("click", function (e) {
+  if (e.target === this) closeNewAlbumModal();
+});
 
 // ===== CURRENT TAB =====
 let currentTab = "todas";
 
-function setTab(tab) {
+window.setTab = function (tab) {
   currentTab = tab;
   document
     .querySelectorAll(".tab-btn")
     .forEach((b) => b.classList.remove("active"));
   document.getElementById("tab-" + tab).classList.add("active");
   renderGrid();
-}
+};
 
 // ===== LONG PRESS =====
 let pressTimer = null;
@@ -127,26 +337,23 @@ let modalQty = 1;
 
 function handleLongPress(id) {
   const c = getCount(id);
-  if (c < 1) return; // nothing to remove
-  // Always open modal so the user can decide what to do
+  if (c < 1) return;
   openModal(id);
 }
 
-function openModal(id) {
+window.openModal = function (id) {
   const c = getCount(id);
-  const dups = c - 1; // extras beyond the 1 in the album
+  const dups = c - 1;
   modalId = id;
   modalQty = 1;
   document.getElementById("modal-num").textContent = id;
 
   if (dups <= 0) {
-    // Has exactly 1 — offer to remove the sticker entirely
     document.getElementById("modal-title").textContent = "Quitar figurita";
     document.getElementById("modal-desc").textContent =
       "Tienes esta figurita. ¿Quitarla del álbum?";
     document.getElementById("modal-stepper").style.display = "none";
   } else {
-    // Has duplicates — let user decide how many extras to remove
     document.getElementById("modal-title").textContent = "Quitar repetidas";
     document.getElementById("modal-desc").textContent =
       `Tienes ${dups} repetida${dups > 1 ? "s" : ""}`;
@@ -156,55 +363,51 @@ function openModal(id) {
   }
 
   document.getElementById("modal").classList.remove("hidden");
-}
+};
 
-function closeModal() {
+window.closeModal = function () {
   document.getElementById("modal").classList.add("hidden");
   modalId = null;
-}
+};
 
-function stepQty(delta) {
+window.stepQty = function (delta) {
   const c = getCount(modalId);
   const dups = c - 1;
   modalQty = Math.max(1, Math.min(dups, modalQty + delta));
   document.getElementById("modal-qty").textContent = modalQty;
   updateStepBtns(dups);
-}
+};
 
 function updateStepBtns(dups) {
   document.getElementById("step-minus").disabled = modalQty <= 1;
   document.getElementById("step-plus").disabled = modalQty >= dups;
 }
 
-function confirmRemove() {
+window.confirmRemove = function () {
   if (!modalId) return;
   const c = getCount(modalId);
   const dups = c - 1;
   if (dups <= 0) {
-    // Remove the sticker entirely (undo a wrong click)
     setCount(modalId, 0);
     updateSticker(modalId);
     updateStats();
     closeModal();
     showToast(`Figurita ${modalId} quitada del álbum`);
   } else {
-    // Remove some duplicates
     setCount(modalId, Math.max(1, c - modalQty));
     updateSticker(modalId);
     updateStats();
     closeModal();
     showToast(`−${modalQty} repetida${modalQty > 1 ? "s" : ""} de ${modalId}`);
   }
-}
+};
 
 // ===== RENDER =====
 function renderGrid() {
   const area = document.getElementById("content-area");
   area.innerHTML = "";
 
-  // filter based on tab
-  const filter = currentTab; // 'todas' | 'faltan' | 'repetidas'
-
+  const filter = currentTab;
   let totalVisible = 0;
 
   for (const section of SECTIONS) {
@@ -244,7 +447,6 @@ function renderGrid() {
     area.appendChild(group);
   }
 
-  // Empty state
   if (totalVisible === 0) {
     const emp = document.createElement("div");
     emp.className = "empty-state";
@@ -256,7 +458,6 @@ function renderGrid() {
     area.appendChild(emp);
   }
 
-  // Reset area
   const resetArea = document.createElement("div");
   resetArea.className = "reset-area";
   resetArea.innerHTML = `<button class="reset-btn" onclick="confirmReset()">🗑 Reiniciar álbum</button>`;
@@ -274,8 +475,6 @@ function createStickerEl(id, isSectionSpecial) {
 
   const numSpan = document.createElement("span");
   numSpan.className = "s-num";
-
-  // For T stickers, show just the number part
   if (id.startsWith("T")) {
     numSpan.textContent = id;
     numSpan.style.fontSize = "9px";
@@ -291,7 +490,6 @@ function createStickerEl(id, isSectionSpecial) {
     el.appendChild(badge);
   }
 
-  // Events
   el.addEventListener("mousedown", () => startPress(el, id));
   el.addEventListener("mouseup", () => endPress(el, id));
   el.addEventListener("mouseleave", () => cancelPress(el));
@@ -313,26 +511,19 @@ function createStickerEl(id, isSectionSpecial) {
 }
 
 function updateSticker(id) {
-  // update specific sticker elements without full re-render
   const elements = document.querySelectorAll(`.sticker[data-id="${id}"]`);
   if (!elements.length) {
-    // need to re-render if this sticker now should appear/disappear
     renderGrid();
     return;
   }
 
   const c = getCount(id);
   const isOwned = c >= 1;
-  const isShiny = SHINIES.has(Number(id));
-  const isTSpecial = id.startsWith("T");
 
   elements.forEach((el) => {
     el.classList.toggle("owned", isOwned);
-
-    // Remove old badge
     const oldBadge = el.querySelector(".dup-badge");
     if (oldBadge) el.removeChild(oldBadge);
-
     if (c >= 2) {
       const badge = document.createElement("span");
       badge.className = "dup-badge";
@@ -341,59 +532,72 @@ function updateSticker(id) {
     }
   });
 
-  // If sticker visibility changes (tab filter), re-render
   if (currentTab !== "todas") {
     renderGrid();
   }
 }
 
 function updateStats() {
-  const s = getStats();
+  let tengo = 0, repetidas = 0;
+  const allIds = getAllIds();
+  for (const id of allIds) {
+    const c = getCount(id);
+    if (c >= 1) tengo++;
+    if (c >= 2) repetidas += c - 1;
+  }
+  const faltan = TOTAL - tengo;
+  const pct = Math.round((tengo / TOTAL) * 100);
+
   const circumference = 188.5;
-  const offset = circumference - (s.pct / 100) * circumference;
+  const offset = circumference - (pct / 100) * circumference;
 
   document.getElementById("ring-fill").style.strokeDashoffset = offset;
-  document.getElementById("ring-pct").textContent = s.pct + "%";
-  document.getElementById("stat-tengo").textContent = s.tengo;
-  document.getElementById("stat-faltan").textContent = s.faltan;
-  document.getElementById("stat-repetidas").textContent = s.repetidas;
+  document.getElementById("ring-pct").textContent = pct + "%";
+  document.getElementById("stat-tengo").textContent = tengo;
+  document.getElementById("stat-faltan").textContent = faltan;
+  document.getElementById("stat-repetidas").textContent = repetidas;
 
   document.getElementById("badge-todas").textContent = TOTAL;
-  document.getElementById("badge-faltan").textContent = s.faltan;
-  document.getElementById("badge-repetidas").textContent = s.repetidas;
+  document.getElementById("badge-faltan").textContent = faltan;
+  document.getElementById("badge-repetidas").textContent = repetidas;
+}
+
+function getAllIds() {
+  const ids = [];
+  for (let i = 1; i <= 613; i++) ids.push(String(i));
+  for (let i = 1; i <= 15; i++) ids.push(`T${String(i).padStart(2, "0")}`);
+  return ids;
 }
 
 // ===== TOAST =====
 let toastTimer = null;
-function showToast(msg) {
+window.showToast = function (msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
-}
+};
 
 // ===== RESET =====
-function confirmReset() {
+window.confirmReset = function () {
   if (
     confirm(
       "⚠️ ¿Seguro que quieres reiniciar el álbum? Se perderá todo el progreso.",
     )
   ) {
     state = {};
-    saveState();
+    debouncedSave();
     renderGrid();
     updateStats();
     showToast("Álbum reiniciado");
   }
-}
+};
 
-// ===== CLOSE MODAL ON OVERLAY CLICK =====
+// ===== CLOSE STICKER MODAL ON OVERLAY CLICK =====
 document.getElementById("modal").addEventListener("click", function (e) {
   if (e.target === this) closeModal();
 });
 
 // ===== INIT =====
-loadState();
-renderGrid();
-updateStats();
+renderAlbumScreen();
