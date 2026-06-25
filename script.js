@@ -24,6 +24,14 @@ const db = getFirestore(app);
 
 // ===== DEVICE ID =====
 function getOrCreateDeviceId() {
+  // If URL has ?device=ID, adopt that ID (cross-device sync link)
+  const urlParam = new URLSearchParams(window.location.search).get("device");
+  if (urlParam && urlParam.length > 10) {
+    localStorage.setItem("album_device_id", urlParam);
+    // Clean the URL without reloading
+    const clean = window.location.pathname;
+    window.history.replaceState({}, "", clean);
+  }
   let id = localStorage.getItem("album_device_id");
   if (!id) {
     id = crypto.randomUUID();
@@ -38,8 +46,12 @@ const DEVICE_ID = getOrCreateDeviceId();
 document.getElementById("device-id-display").textContent =
   DEVICE_ID.slice(0, 8) + "…";
 
+// Copy a sync link — opening it on any device adopts this device's ID
 window.copyDeviceId = function () {
-  navigator.clipboard.writeText(DEVICE_ID).then(() => showToast("ID copiado al portapapeles"));
+  const syncUrl = `${location.origin}${location.pathname}?device=${DEVICE_ID}`;
+  navigator.clipboard.writeText(syncUrl).then(() =>
+    showToast("🔗 Enlace copiado — ábrelo en otro dispositivo")
+  );
 };
 
 // ===== FIRESTORE HELPERS =====
