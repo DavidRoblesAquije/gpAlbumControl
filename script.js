@@ -57,6 +57,9 @@ window.handleLogout = async () => {
 
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
+  // Always show album-screen initially to ensure login card is visible
+  document.getElementById("album-screen").classList.remove("hidden");
+  
   if (user) {
     document.getElementById("auth-section").classList.add("hidden");
     document.getElementById("albums-container").classList.remove("hidden");
