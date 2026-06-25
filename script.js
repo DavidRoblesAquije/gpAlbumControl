@@ -9,6 +9,13 @@ import {
   getDocs,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAk4YbkVfRU7_d72yz2EA6wLKG4UYDVRB0",
@@ -21,46 +28,89 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-// ===== DEVICE ID =====
-function getOrCreateDeviceId() {
-  // If URL has ?device=ID, adopt that ID (cross-device sync link)
-  const urlParam = new URLSearchParams(window.location.search).get("device");
-  if (urlParam && urlParam.length > 10) {
-    localStorage.setItem("album_device_id", urlParam);
-    // Clean the URL without reloading
-    const clean = window.location.pathname;
-    window.history.replaceState({}, "", clean);
+// ===== AUTH LOGIC =====
+let currentUser = null;
+
+window.handleLogin = async () => {
+  try {
+    showSync(true);
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Login failed", error);
+    showToast("Error al iniciar sesión");
+  } finally {
+    showSync(false);
   }
-  let id = localStorage.getItem("album_device_id");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("album_device_id", id);
+};
+
+window.handleLogout = async () => {
+  try {
+    await signOut(auth);
+    location.reload(); 
+  } catch (error) {
+    console.error("Logout failed", error);
   }
-  return id;
+};
+
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  if (user) {
+    document.getElementById("auth-section").classList.add("hidden");
+    document.getElementById("albums-container").classList.remove("hidden");
+    updateUserProfileUI(user);
+    checkAndMigrateLegacyData(user.uid);
+    renderAlbumScreen();
+  } else {
+    document.getElementById("auth-section").classList.remove("hidden");
+    document.getElementById("albums-container").classList.add("hidden");
+    document.querySelectorAll(".user-profile").forEach(el => el.classList.add("hidden"));
+    // If not logged in, we shouldn't see anything
+    document.getElementById("album-screen").classList.add("hidden");
+    document.getElementById("album-view").classList.add("hidden");
+  }
+});
+
+function updateUserProfileUI(user) {
+  document.querySelectorAll(".user-profile").forEach(el => el.classList.remove("hidden"));
+  document.getElementById("user-photo-home").src = user.photoURL;
+  document.getElementById("user-photo-view").src = user.photoURL;
+  document.getElementById("user-name-home").textContent = user.displayName;
 }
 
-const DEVICE_ID = getOrCreateDeviceId();
+// ===== MIGRATION LOGIC =====
+async function checkAndMigrateLegacyData(uid) {
+  const deviceId = localStorage.getItem("album_device_id");
+  if (!deviceId) return;
 
-// Show device ID on screen
-document.getElementById("device-id-display").textContent =
-  DEVICE_ID.slice(0, 8) + "…";
-
-// Copy a sync link — opening it on any device adopts this device's ID
-window.copyDeviceId = function () {
-  const syncUrl = `${location.origin}${location.pathname}?device=${DEVICE_ID}`;
-  navigator.clipboard.writeText(syncUrl).then(() =>
-    showToast("🔗 Enlace copiado — ábrelo en otro dispositivo")
-  );
-};
+  const deviceAlbumsSnap = await getDocs(collection(db, "devices", deviceId, "albums"));
+  if (!deviceAlbumsSnap.empty) {
+    const confirmMigrate = confirm("Hemos detectado álbumes en este dispositivo. ¿Quieres moverlos a tu cuenta de Google para verlos en cualquier lugar?");
+    if (confirmMigrate) {
+      showSync(true);
+      for (const albumDocRef of deviceAlbumsSnap.docs) {
+        await setDoc(doc(db, "users", uid, "albums", albumDocRef.id), albumDocRef.data());
+        await deleteDoc(albumDocRef.ref);
+      }
+      localStorage.removeItem("album_device_id");
+      showToast("¡Álbumes migrados con éxito!");
+      renderAlbumScreen();
+      showSync(false);
+    }
+  }
+}
 
 // ===== FIRESTORE HELPERS =====
 function albumsCol() {
-  return collection(db, "devices", DEVICE_ID, "albums");
+  if (!currentUser) return null;
+  return collection(db, "users", currentUser.uid, "albums");
 }
 
 function albumDoc(albumId) {
-  return doc(db, "devices", DEVICE_ID, "albums", albumId);
+  if (!currentUser) return null;
+  return doc(db, "users", currentUser.uid, "albums", albumId);
 }
 
 function showSync(visible) {
@@ -91,10 +141,10 @@ for (let i = 1; i <= 15; i++) tIds.push(`T${String(i).padStart(2, "0")}`);
 SECTIONS.push({ label: "Especiales", ids: tIds, special: true });
 
 // ===== STATE =====
-let state = {};           // id -> count for current album
+let state = {};           
 let currentAlbumId = null;
 let currentAlbumName = "";
-let saveTimeout = null;   // debounce saves
+let saveTimeout = null;   
 
 function getCount(id) {
   return state[id] || 0;
@@ -106,7 +156,6 @@ function setCount(id, n) {
   debouncedSave();
 }
 
-// Debounce Firestore writes (500ms) to avoid hammering on rapid clicks
 function debouncedSave() {
   clearTimeout(saveTimeout);
   showSync(true);
@@ -117,7 +166,7 @@ function debouncedSave() {
 }
 
 async function saveCurrentAlbum() {
-  if (!currentAlbumId) return;
+  if (!currentAlbumId || !currentUser) return;
   await setDoc(albumDoc(currentAlbumId), {
     name: currentAlbumName,
     stickers: state,

@@ -76,6 +76,7 @@ body {
   font-weight: 800;
   background: linear-gradient(135deg, #fff 0%, var(--blue-light) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1;
 }
@@ -132,6 +133,7 @@ body {
   font-weight: 800;
   background: linear-gradient(135deg, var(--blue-light), var(--gold));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .ring-label {
@@ -483,6 +485,7 @@ body {
   margin-bottom: 4px;
   background: linear-gradient(135deg, #fff, var(--blue-light));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .modal-box .modal-sub {
@@ -854,44 +857,113 @@ body {
   line-height: 1;
 }
 
-/* ========== DEVICE ID ========== */
-.device-id-wrap {
+/* ========== AUTHENTICATION SCREEN ========== */
+.auth-section {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  padding: 60px 20px;
+  min-height: 400px;
+}
+.auth-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 12px;
+  border-radius: 24px;
+  padding: 40px 30px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
-.device-id-label {
-  color: var(--text-muted);
-  flex-shrink: 0;
+.auth-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
 }
-.device-id-value {
-  font-family: monospace;
+.auth-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #fff, var(--blue-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.auth-card p {
+  font-size: 14px;
   color: var(--text-dim);
-  flex: 1;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #fff;
+  color: #3c4043;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  font-family: inherit;
+}
+.google-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+.google-btn img {
+  width: 20px;
+  height: 20px;
+}
+
+/* ========== USER PROFILE ========== */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+.user-profile img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--blue);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.user-info span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.copy-btn {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
+.logout-link {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  font-family: "Inter", sans-serif;
-  transition: all var(--transition);
-  flex-shrink: 0;
+  text-decoration: underline;
+  transition: color 0.2s;
 }
-.copy-btn:hover {
-  background: var(--blue-dark);
-  color: #fff;
+.logout-link:hover {
+  color: var(--red);
+}
+
+#user-profile-view {
+  margin-left: initial;
 }
 
 /* ========== NEW ALBUM INPUT ========== */

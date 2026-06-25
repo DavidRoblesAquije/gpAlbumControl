@@ -23,13 +23,32 @@
             <h1>Mis Álbumes</h1>
             <span>Selecciona o crea un álbum</span>
           </div>
+          <div id="user-profile-home" class="user-profile hidden">
+            <img id="user-photo-home" src="" alt="User" />
+            <div class="user-info">
+              <span id="user-name-home"></span>
+              <button class="logout-link" onclick="handleLogout()">Cerrar sesión</button>
+            </div>
+          </div>
           <div id="sync-indicator" class="sync-indicator hidden" title="Sincronizando…">
             <div class="sync-spinner"></div>
           </div>
         </div>
       </header>
 
-      <div class="albums-container">
+      <div id="auth-section" class="auth-section">
+        <div class="auth-card">
+          <div class="auth-icon">🔐</div>
+          <h2>Conecta tu álbum</h2>
+          <p>Inicia sesión con Google para sincronizar tus álbumes en todos tus dispositivos.</p>
+          <button class="google-btn" onclick="handleLogin()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+            Continuar con Google
+          </button>
+        </div>
+      </div>
+
+      <div id="albums-container" class="albums-container hidden">
         <div id="albums-list" class="albums-list">
           <!-- cards rendered by JS -->
         </div>
@@ -37,11 +56,6 @@
           <span class="new-album-icon">＋</span>
           Nuevo álbum
         </button>
-        <div class="device-id-wrap">
-          <span class="device-id-label">🔗 Sincronizar dispositivos</span>
-          <span class="device-id-value" id="device-id-display">—</span>
-          <button class="copy-btn" onclick="copyDeviceId()">Copiar enlace</button>
-        </div>
       </div>
     </div>
 
@@ -56,6 +70,9 @@
           <div class="header-title">
             <h1 id="album-view-title">Mundial 2026</h1>
             <span>Álbum personal</span>
+          </div>
+          <div id="user-profile-view" class="user-profile hidden">
+            <img id="user-photo-view" src="" alt="User" />
           </div>
           <div id="sync-indicator-view" class="sync-indicator hidden" title="Sincronizando…">
             <div class="sync-spinner"></div>
