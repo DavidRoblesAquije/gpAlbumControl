@@ -48,6 +48,8 @@ window.handleLogin = async () => {
 
 window.handleLogout = async () => {
   try {
+    localStorage.removeItem("last_album_id");
+    localStorage.removeItem("last_album_name");
     await signOut(auth);
     location.reload(); 
   } catch (error) {
@@ -55,7 +57,7 @@ window.handleLogout = async () => {
   }
 };
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   // Always show album-screen initially to ensure login card is visible
   document.getElementById("album-screen").classList.remove("hidden");
@@ -65,11 +67,27 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById("albums-container").classList.remove("hidden");
     updateUserProfileUI(user);
     checkAndMigrateLegacyData(user.uid);
-    renderAlbumScreen();
+    
+    // Resume session if possible
+    const lastId = localStorage.getItem("last_album_id");
+    const lastName = localStorage.getItem("last_album_name");
+    
+    if (lastId && lastName) {
+      await selectAlbum(lastId, lastName);
+    } else {
+      renderAlbumScreen();
+    }
   } else {
     document.getElementById("auth-section").classList.remove("hidden");
     document.getElementById("albums-container").classList.add("hidden");
     document.querySelectorAll(".user-profile").forEach(el => el.classList.add("hidden"));
+  }
+  
+  // Hide initial loading screen
+  const loader = document.getElementById("loading-screen");
+  if (loader) {
+    loader.classList.add("fade-out");
+    setTimeout(() => loader.remove(), 500);
   }
 });
 
@@ -279,6 +297,10 @@ async function renderAlbumScreen() {
 }
 
 window.selectAlbum = async function (albumId, albumName) {
+  // Save session
+  localStorage.setItem("last_album_id", albumId);
+  localStorage.setItem("last_album_name", albumName);
+
   await loadAlbum(albumId, albumName);
   document.getElementById("album-screen").classList.add("hidden");
   document.getElementById("album-view").classList.remove("hidden");
@@ -289,6 +311,10 @@ window.selectAlbum = async function (albumId, albumName) {
 };
 
 window.goBackToAlbums = function () {
+  // Clear session
+  localStorage.removeItem("last_album_id");
+  localStorage.removeItem("last_album_name");
+  
   currentAlbumId = null;
   state = {};
   renderAlbumScreen();
