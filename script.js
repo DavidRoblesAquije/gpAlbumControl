@@ -67,9 +67,6 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById("auth-section").classList.remove("hidden");
     document.getElementById("albums-container").classList.add("hidden");
     document.querySelectorAll(".user-profile").forEach(el => el.classList.add("hidden"));
-    // If not logged in, we shouldn't see anything
-    document.getElementById("album-screen").classList.add("hidden");
-    document.getElementById("album-view").classList.add("hidden");
   }
 });
 
