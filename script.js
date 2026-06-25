@@ -661,4 +661,3 @@ document.getElementById("modal").addEventListener("click", function (e) {
 });
 
 // ===== INIT =====
-renderAlbumScreen();
