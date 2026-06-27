@@ -163,6 +163,33 @@ let state = {};
 let currentAlbumId = null;
 let currentAlbumName = "";
 let saveTimeout = null;   
+let isLocked = localStorage.getItem("album_locked") === "true";
+
+window.toggleLock = function () {
+  isLocked = !isLocked;
+  localStorage.setItem("album_locked", isLocked);
+  updateLockUI();
+  showToast(isLocked ? "🔒 Edición bloqueada" : "🔓 Edición desbloqueada");
+};
+
+function updateLockUI() {
+  const lockBtn = document.getElementById("lock-btn");
+  const contentArea = document.getElementById("content-area");
+  if (!lockBtn || !contentArea) return;
+  
+  if (isLocked) {
+    lockBtn.textContent = "🔒";
+    lockBtn.classList.add("locked");
+    lockBtn.title = "Desbloquear edición";
+    contentArea.classList.add("edit-locked");
+  } else {
+    lockBtn.textContent = "🔓";
+    lockBtn.classList.remove("locked");
+    lockBtn.title = "Bloquear edición";
+    contentArea.classList.remove("edit-locked");
+  }
+}
+
 
 function getCount(id) {
   return state[id] || 0;
@@ -306,6 +333,7 @@ window.selectAlbum = async function (albumId, albumName) {
   document.getElementById("album-view").classList.remove("hidden");
   document.getElementById("album-view-title").textContent = albumName;
   document.title = `${albumName} 🏆`;
+  updateLockUI();
   renderGrid();
   updateStats();
 };
@@ -385,6 +413,7 @@ let pressTarget = null;
 let longPressTriggered = false;
 
 function startPress(el, id) {
+  if (isLocked) return;
   longPressTriggered = false;
   pressTarget = el;
   el.classList.add("pressing");
@@ -396,6 +425,10 @@ function startPress(el, id) {
 }
 
 function endPress(el, id) {
+  if (isLocked) {
+    showToast("⚠️ Álbum bloqueado. Desactiva el candado para editar.");
+    return;
+  }
   clearTimeout(pressTimer);
   el.classList.remove("pressing");
   if (!longPressTriggered) {
@@ -668,6 +701,10 @@ window.showToast = function (msg) {
 
 // ===== RESET =====
 window.confirmReset = function () {
+  if (isLocked) {
+    showToast("⚠️ Desactiva el candado para reiniciar el álbum.");
+    return;
+  }
   if (
     confirm(
       "⚠️ ¿Seguro que quieres reiniciar el álbum? Se perderá todo el progreso.",
