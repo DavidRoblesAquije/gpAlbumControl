@@ -175,18 +175,25 @@ window.toggleLock = function () {
 function updateLockUI() {
   const lockBtn = document.getElementById("lock-btn");
   const contentArea = document.getElementById("content-area");
-  if (!lockBtn || !contentArea) return;
+  if (!lockBtn) return;
+  
+  if (currentAlbumId) {
+    lockBtn.classList.remove("hidden");
+  } else {
+    lockBtn.classList.add("hidden");
+    return;
+  }
   
   if (isLocked) {
     lockBtn.textContent = "🔒";
     lockBtn.classList.add("locked");
     lockBtn.title = "Desbloquear edición";
-    contentArea.classList.add("edit-locked");
+    if (contentArea) contentArea.classList.add("edit-locked");
   } else {
     lockBtn.textContent = "🔓";
     lockBtn.classList.remove("locked");
     lockBtn.title = "Bloquear edición";
-    contentArea.classList.remove("edit-locked");
+    if (contentArea) contentArea.classList.remove("edit-locked");
   }
 }
 
@@ -345,6 +352,7 @@ window.goBackToAlbums = function () {
   
   currentAlbumId = null;
   state = {};
+  updateLockUI();
   renderAlbumScreen();
 };
 
@@ -724,3 +732,4 @@ document.getElementById("modal").addEventListener("click", function (e) {
 });
 
 // ===== INIT =====
+document.getElementById("lock-btn").addEventListener("click", window.toggleLock);
