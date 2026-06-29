@@ -51,7 +51,7 @@ window.handleLogout = async () => {
     localStorage.removeItem("last_album_id");
     localStorage.removeItem("last_album_name");
     await signOut(auth);
-    location.reload(); 
+    location.reload();
   } catch (error) {
     console.error("Logout failed", error);
   }
@@ -61,17 +61,17 @@ onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   // Always show album-screen initially to ensure login card is visible
   document.getElementById("album-screen").classList.remove("hidden");
-  
+
   if (user) {
     document.getElementById("auth-section").classList.add("hidden");
     document.getElementById("albums-container").classList.remove("hidden");
     updateUserProfileUI(user);
     checkAndMigrateLegacyData(user.uid);
-    
+
     // Resume session if possible
     const lastId = localStorage.getItem("last_album_id");
     const lastName = localStorage.getItem("last_album_name");
-    
+
     if (lastId && lastName) {
       await selectAlbum(lastId, lastName);
     } else {
@@ -80,9 +80,11 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     document.getElementById("auth-section").classList.remove("hidden");
     document.getElementById("albums-container").classList.add("hidden");
-    document.querySelectorAll(".user-profile").forEach(el => el.classList.add("hidden"));
+    document
+      .querySelectorAll(".user-profile")
+      .forEach((el) => el.classList.add("hidden"));
   }
-  
+
   // Hide initial loading screen
   const loader = document.getElementById("loading-screen");
   if (loader) {
@@ -92,7 +94,9 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function updateUserProfileUI(user) {
-  document.querySelectorAll(".user-profile").forEach(el => el.classList.remove("hidden"));
+  document
+    .querySelectorAll(".user-profile")
+    .forEach((el) => el.classList.remove("hidden"));
   document.getElementById("user-photo-home").src = user.photoURL;
   document.getElementById("user-photo-view").src = user.photoURL;
   document.getElementById("user-name-home").textContent = user.displayName;
@@ -103,13 +107,20 @@ async function checkAndMigrateLegacyData(uid) {
   const deviceId = localStorage.getItem("album_device_id");
   if (!deviceId) return;
 
-  const deviceAlbumsSnap = await getDocs(collection(db, "devices", deviceId, "albums"));
+  const deviceAlbumsSnap = await getDocs(
+    collection(db, "devices", deviceId, "albums"),
+  );
   if (!deviceAlbumsSnap.empty) {
-    const confirmMigrate = confirm("Hemos detectado álbumes en este dispositivo. ¿Quieres moverlos a tu cuenta de Google para verlos en cualquier lugar?");
+    const confirmMigrate = confirm(
+      "Hemos detectado álbumes en este dispositivo. ¿Quieres moverlos a tu cuenta de Google para verlos en cualquier lugar?",
+    );
     if (confirmMigrate) {
       showSync(true);
       for (const albumDocRef of deviceAlbumsSnap.docs) {
-        await setDoc(doc(db, "users", uid, "albums", albumDocRef.id), albumDocRef.data());
+        await setDoc(
+          doc(db, "users", uid, "albums", albumDocRef.id),
+          albumDocRef.data(),
+        );
         await deleteDoc(albumDocRef.ref);
       }
       localStorage.removeItem("album_device_id");
@@ -146,6 +157,15 @@ const SHINIES = new Set([
   480, 486, 541, 559, 564, 591, 594, 605,
 ]);
 
+// ===== UPDATED STICKERS =====
+// Lista de stickers que fueron actualizados y deben resaltarse con borde verde
+const UPDATED = new Set([
+  64, 67, 76, 98, 142, 151, 162, 170, 176, 186, 187, 207, 213, 214, 215,
+  230, 238, 242, 243, 276, 296, 305, 320, 321, 354, 375, 372, 392, 395,
+  442, 446, 479, 488, 497, 503, 511, 516, 551, 558, 560, 570, 585, 589,
+  592, 593, 596, 608,
+]);
+
 // Build section groups
 const SECTIONS = [];
 for (let start = 1; start <= 613; start += 20) {
@@ -159,10 +179,10 @@ for (let i = 1; i <= 15; i++) tIds.push(`T${String(i).padStart(2, "0")}`);
 SECTIONS.push({ label: "Especiales", ids: tIds, special: true });
 
 // ===== STATE =====
-let state = {};           
+let state = {};
 let currentAlbumId = null;
 let currentAlbumName = "";
-let saveTimeout = null;   
+let saveTimeout = null;
 let isLocked = localStorage.getItem("album_locked") === "true";
 
 window.toggleLock = function () {
@@ -177,14 +197,14 @@ function updateLockUI() {
   const lockBtn = document.getElementById("lock-btn");
   const contentArea = document.getElementById("content-area");
   if (!container || !lockBtn) return;
-  
+
   if (currentAlbumId) {
     container.classList.remove("hidden");
   } else {
     container.classList.add("hidden");
     return;
   }
-  
+
   if (isLocked) {
     lockBtn.textContent = "🔒";
     lockBtn.classList.add("locked");
@@ -197,7 +217,6 @@ function updateLockUI() {
     if (contentArea) contentArea.classList.remove("edit-locked");
   }
 }
-
 
 function getCount(id) {
   return state[id] || 0;
@@ -246,10 +265,18 @@ const LEGACY_KEY = "mundial2026_v2";
 
 window.importLegacyData = async function () {
   const raw = localStorage.getItem(LEGACY_KEY);
-  if (!raw) { showToast("No hay datos guardados para importar"); return; }
+  if (!raw) {
+    showToast("No hay datos guardados para importar");
+    return;
+  }
 
   let stickers;
-  try { stickers = JSON.parse(raw); } catch { showToast("Error al leer los datos"); return; }
+  try {
+    stickers = JSON.parse(raw);
+  } catch {
+    showToast("Error al leer los datos");
+    return;
+  }
 
   const name = prompt("¿Qué nombre le pones a este álbum?", "GP 1");
   if (!name || !name.trim()) return;
@@ -350,7 +377,7 @@ window.goBackToAlbums = function () {
   // Clear session
   localStorage.removeItem("last_album_id");
   localStorage.removeItem("last_album_name");
-  
+
   currentAlbumId = null;
   state = {};
   updateLockUI();
@@ -358,7 +385,10 @@ window.goBackToAlbums = function () {
 };
 
 window.deleteAlbum = async function (albumId, albumName) {
-  if (!confirm(`¿Eliminar el álbum "${albumName}"? Se perderá todo el progreso.`)) return;
+  if (
+    !confirm(`¿Eliminar el álbum "${albumName}"? Se perderá todo el progreso.`)
+  )
+    return;
   showSync(true);
   await deleteDoc(albumDoc(albumId));
   showSync(false);
@@ -400,9 +430,11 @@ window.confirmNewAlbum = async function () {
 };
 
 // Close new album modal on overlay click
-document.getElementById("modal-new-album").addEventListener("click", function (e) {
-  if (e.target === this) closeNewAlbumModal();
-});
+document
+  .getElementById("modal-new-album")
+  .addEventListener("click", function (e) {
+    if (e.target === this) closeNewAlbumModal();
+  });
 
 // ===== CURRENT TAB =====
 let currentTab = "todas";
@@ -599,7 +631,9 @@ function createStickerEl(id, isSectionSpecial) {
   const isShiny = SHINIES.has(Number(id)) || isSectionSpecial;
 
   const el = document.createElement("div");
-  el.className = `sticker${isOwned ? " owned" : ""}${isShiny ? " special" : ""}`;
+  el.className = `sticker${isOwned ? " owned" : ""}${isShiny ? " special" : ""}${
+    UPDATED.has(Number(id)) ? " updated" : ""
+  }`;
   el.dataset.id = id;
 
   const numSpan = document.createElement("span");
@@ -651,6 +685,8 @@ function updateSticker(id) {
 
   elements.forEach((el) => {
     el.classList.toggle("owned", isOwned);
+    // Preserve updated marker if this sticker is in the UPDATED set
+    el.classList.toggle("updated", UPDATED.has(Number(id)));
     const oldBadge = el.querySelector(".dup-badge");
     if (oldBadge) el.removeChild(oldBadge);
     if (c >= 2) {
@@ -667,7 +703,8 @@ function updateSticker(id) {
 }
 
 function updateStats() {
-  let tengo = 0, repetidas = 0;
+  let tengo = 0,
+    repetidas = 0;
   const allIds = getAllIds();
   for (const id of allIds) {
     const c = getCount(id);
@@ -736,12 +773,12 @@ document.getElementById("modal").addEventListener("click", function (e) {
 window.openShareModal = function (type) {
   const titleEl = document.getElementById("share-modal-title");
   const textarea = document.getElementById("share-list-text");
-  
+
   if (type === "faltantes") {
     titleEl.textContent = "Stickers Faltantes";
     const allIds = getAllIds();
-    const missing = allIds.filter(id => getCount(id) === 0);
-    
+    const missing = allIds.filter((id) => getCount(id) === 0);
+
     if (missing.length === 0) {
       textarea.value = `¡Álbum "${currentAlbumName}" completo!\nNo te falta ningún sticker.`;
     } else {
@@ -750,15 +787,15 @@ window.openShareModal = function (type) {
   } else if (type === "repetidas") {
     titleEl.textContent = "Stickers Repetidos";
     const allIds = getAllIds();
-    const dups = allIds.filter(id => getCount(id) >= 2);
-    
+    const dups = allIds.filter((id) => getCount(id) >= 2);
+
     if (dups.length === 0) {
       textarea.value = `Álbum "${currentAlbumName}"\nNo tienes stickers repetidos.`;
     } else {
       textarea.value = `🔁 REPETIDAS - Álbum: ${currentAlbumName} (${dups.length})\n${dups.join(", ")}`;
     }
   }
-  
+
   document.getElementById("modal-share").classList.remove("hidden");
 };
 
@@ -769,12 +806,13 @@ window.closeShareModal = function () {
 window.copyShareList = function () {
   const textarea = document.getElementById("share-list-text");
   if (!textarea) return;
-  
+
   textarea.select();
   textarea.setSelectionRange(0, 99999);
-  
+
   try {
-    navigator.clipboard.writeText(textarea.value)
+    navigator.clipboard
+      .writeText(textarea.value)
       .then(() => {
         showToast("📋 ¡Lista copiada al portapapeles!");
         closeShareModal();
@@ -796,4 +834,6 @@ document.getElementById("modal-share").addEventListener("click", function (e) {
 });
 
 // ===== INIT =====
-document.getElementById("lock-btn").addEventListener("click", window.toggleLock);
+document
+  .getElementById("lock-btn")
+  .addEventListener("click", window.toggleLock);

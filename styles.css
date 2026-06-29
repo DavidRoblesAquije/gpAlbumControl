@@ -328,6 +328,20 @@ body {
   z-index: -1;
   opacity: 0.6;
 }
+
+/* ===== UPDATED (stickers que cambiaron en la actualización) ===== */
+.sticker.updated::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid #007f3b; /* verde intenso */
+  box-shadow: 0 6px 18px rgba(0, 127, 59, 0.28);
+  pointer-events: none;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  z-index: 2;
+}
+
 .sticker.special.owned {
   border: 2px solid var(--gold);
   background: linear-gradient(135deg, #78350f, #d97706);
@@ -697,7 +711,9 @@ body {
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ========== BACK BUTTON ========== */
@@ -851,11 +867,16 @@ body {
 }
 
 @keyframes pulseLockFloat {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }
-
 
 /* ========== EDIT LOCKED STATE ========== */
 .content-area.edit-locked .sticker {
@@ -868,11 +889,15 @@ body {
 }
 .content-area.edit-locked .sticker.owned:hover {
   border-color: var(--blue);
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.35), 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 12px rgba(59, 130, 246, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.4);
 }
 .content-area.edit-locked .sticker.special.owned:hover {
   border-color: var(--gold);
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 14px rgba(245, 158, 11, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.4);
 }
 .content-area.edit-locked .sticker:active {
   transform: none;
@@ -880,7 +905,6 @@ body {
 .content-area.edit-locked .sticker.pressing::after {
   animation: none;
 }
-
 
 /* ========== ALBUM SCREEN ========== */
 .albums-container {
@@ -912,7 +936,9 @@ body {
   align-items: center;
   gap: 8px;
   padding: 4px 4px 4px 0;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 .album-card:hover {
   border-color: rgba(59, 130, 246, 0.4);
@@ -930,7 +956,7 @@ body {
   transition: background var(--transition);
 }
 .album-card-info:hover {
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .album-card-icon {
@@ -973,7 +999,9 @@ body {
   cursor: pointer;
   padding: 10px 12px;
   border-radius: 10px;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition);
   flex-shrink: 0;
 }
 .album-delete-btn:hover {
@@ -1064,7 +1092,9 @@ body {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   width: 100%;
   font-family: inherit;
 }
@@ -1135,7 +1165,9 @@ body {
   color: var(--text);
   font-family: "Inter", sans-serif;
   outline: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 .album-name-input:focus {
   border-color: var(--blue);
@@ -1163,7 +1195,11 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.06));
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.12),
+    rgba(245, 158, 11, 0.06)
+  );
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: 14px;
   padding: 14px 16px;
@@ -1200,11 +1236,11 @@ body {
   font-family: "Inter", sans-serif;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(245,158,11,0.3);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
 }
 .import-banner-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 16px rgba(245,158,11,0.4);
+  box-shadow: 0 5px 16px rgba(245, 158, 11, 0.4);
 }
 
 /* ========== LOADING SCREEN ========== */
@@ -1216,7 +1252,9 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  transition: opacity 0.5s ease, visibility 0.5s;
+  transition:
+    opacity 0.5s ease,
+    visibility 0.5s;
 }
 .loader-content {
   text-align: center;
