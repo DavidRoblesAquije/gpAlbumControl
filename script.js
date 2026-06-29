@@ -173,14 +173,15 @@ window.toggleLock = function () {
 };
 
 function updateLockUI() {
+  const container = document.getElementById("floating-actions-container");
   const lockBtn = document.getElementById("lock-btn");
   const contentArea = document.getElementById("content-area");
-  if (!lockBtn) return;
+  if (!container || !lockBtn) return;
   
   if (currentAlbumId) {
-    lockBtn.classList.remove("hidden");
+    container.classList.remove("hidden");
   } else {
-    lockBtn.classList.add("hidden");
+    container.classList.add("hidden");
     return;
   }
   
@@ -729,6 +730,69 @@ window.confirmReset = function () {
 // ===== CLOSE STICKER MODAL ON OVERLAY CLICK =====
 document.getElementById("modal").addEventListener("click", function (e) {
   if (e.target === this) closeModal();
+});
+
+// ===== SHARE MODAL LOGIC =====
+window.openShareModal = function (type) {
+  const titleEl = document.getElementById("share-modal-title");
+  const textarea = document.getElementById("share-list-text");
+  
+  if (type === "faltantes") {
+    titleEl.textContent = "Stickers Faltantes";
+    const allIds = getAllIds();
+    const missing = allIds.filter(id => getCount(id) === 0);
+    
+    if (missing.length === 0) {
+      textarea.value = `¡Álbum "${currentAlbumName}" completo!\nNo te falta ningún sticker.`;
+    } else {
+      textarea.value = `📍 FALTANTES - Álbum: ${currentAlbumName} (${missing.length})\n${missing.join(", ")}`;
+    }
+  } else if (type === "repetidas") {
+    titleEl.textContent = "Stickers Repetidos";
+    const allIds = getAllIds();
+    const dups = allIds.filter(id => getCount(id) >= 2);
+    
+    if (dups.length === 0) {
+      textarea.value = `Álbum "${currentAlbumName}"\nNo tienes stickers repetidos.`;
+    } else {
+      textarea.value = `🔁 REPETIDAS - Álbum: ${currentAlbumName} (${dups.length})\n${dups.join(", ")}`;
+    }
+  }
+  
+  document.getElementById("modal-share").classList.remove("hidden");
+};
+
+window.closeShareModal = function () {
+  document.getElementById("modal-share").classList.add("hidden");
+};
+
+window.copyShareList = function () {
+  const textarea = document.getElementById("share-list-text");
+  if (!textarea) return;
+  
+  textarea.select();
+  textarea.setSelectionRange(0, 99999);
+  
+  try {
+    navigator.clipboard.writeText(textarea.value)
+      .then(() => {
+        showToast("📋 ¡Lista copiada al portapapeles!");
+        closeShareModal();
+      })
+      .catch(() => {
+        document.execCommand("copy");
+        showToast("📋 ¡Lista copiada al portapapeles!");
+        closeShareModal();
+      });
+  } catch (err) {
+    document.execCommand("copy");
+    showToast("📋 ¡Lista copiada al portapapeles!");
+    closeShareModal();
+  }
+};
+
+document.getElementById("modal-share").addEventListener("click", function (e) {
+  if (e.target === this) closeShareModal();
 });
 
 // ===== INIT =====

@@ -202,8 +202,29 @@
     <!-- TOAST -->
     <div class="toast" id="toast"></div>
 
-    <!-- BOTÓN DE CANDADO FLOTANTE -->
-    <button id="lock-btn" class="lock-btn-float hidden" title="Bloquear edición">🔓</button>
+    <!-- BOTONES ACCIONES FLOTANTES -->
+    <div id="floating-actions-container" class="floating-actions-container hidden">
+      <button id="missing-btn" class="action-btn-float missing" title="Preparar lista de faltantes" onclick="openShareModal('faltantes')">📋</button>
+      <button id="dups-btn" class="action-btn-float dups" title="Preparar lista de repetidas" onclick="openShareModal('repetidas')">🔁</button>
+      <button id="lock-btn" class="lock-btn-float" title="Bloquear edición">🔓</button>
+    </div>
+
+    <!-- MODAL COMPARTIR LISTA -->
+    <div class="modal-overlay hidden" id="modal-share">
+      <div class="modal-box share-modal-box">
+        <h2 id="share-modal-title">Lista de Figuritas</h2>
+        <p class="modal-sub" id="share-modal-sub">Puedes copiar esta lista para compartirla.</p>
+        <textarea id="share-list-text" class="share-list-text" readonly></textarea>
+        <div class="modal-actions">
+          <button class="btn btn-cancel" onclick="closeShareModal()">
+            Cerrar
+          </button>
+          <button class="btn btn-confirm btn-copy" onclick="copyShareList()">
+            Copiar Lista
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="script.js"></script>
   </body>

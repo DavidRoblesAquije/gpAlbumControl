@@ -725,38 +725,81 @@ body {
   border-color: var(--blue);
 }
 
-/* ========== FLOATING LOCK BUTTON ========== */
-.lock-btn-float {
+/* ========== FLOATING ACTIONS CONTAINER ========== */
+.floating-actions-container {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 150;
+  align-items: center;
+}
+.floating-actions-container.hidden {
+  display: none;
+}
+
+/* ========== FLOATING ACTIONS BUTTONS ========== */
+.action-btn-float,
+.lock-btn-float {
   width: 50px;
   height: 50px;
   border-radius: 50%;
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text-dim);
-  font-size: 22px;
+  font-size: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  z-index: 150;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: "Inter", sans-serif;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+.action-btn-float:hover,
 .lock-btn-float:hover {
   transform: scale(1.1);
+}
+.action-btn-float:active,
+.lock-btn-float:active {
+  transform: scale(0.92);
+}
+
+/* Missing button specific styling */
+.action-btn-float.missing {
+  color: #f87171;
+}
+.action-btn-float.missing:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.25);
+  color: var(--red);
+}
+
+/* Duplicates button specific styling */
+.action-btn-float.dups {
+  color: var(--gold-light);
+}
+.action-btn-float.dups:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);
+  color: var(--gold);
+}
+
+/* Lock button overrides */
+.lock-btn-float {
+  font-size: 22px;
+}
+.lock-btn-float:hover {
   background: rgba(34, 197, 94, 0.12);
   color: var(--green);
   border-color: rgba(34, 197, 94, 0.4);
   box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25);
-}
-.lock-btn-float:active {
-  transform: scale(0.92);
 }
 .lock-btn-float.locked {
   background: rgba(239, 68, 68, 0.12);
@@ -770,6 +813,41 @@ body {
   color: var(--red);
   border-color: var(--red);
   box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+}
+
+/* ========== SHARE MODAL ========== */
+.share-modal-box {
+  max-width: 420px;
+}
+.share-list-text {
+  width: 100%;
+  height: 180px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: none;
+  margin-bottom: 20px;
+  outline: none;
+  line-height: 1.5;
+}
+.share-list-text:focus {
+  border-color: var(--blue);
+}
+.btn-copy {
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+}
+.btn-copy:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+.btn-copy:active {
+  transform: translateY(0);
 }
 
 @keyframes pulseLockFloat {
